@@ -1,0 +1,22 @@
+[project]
+name = "fda-pharma-predictor"
+version = "0.1.0"
+description = "NLP system for predicting FDA Advisory Committee outcomes"
+requires-python = ">=3.10"
+dependencies = [
+    "requests",
+    "beautifulsoup4",
+    "pandas",
+    "pdfplumber",
+    "python-dotenv",
+    "scikit-learn",
+    "tqdm",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
