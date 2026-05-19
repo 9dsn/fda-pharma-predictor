@@ -12,7 +12,7 @@
 - Wayback (new format): 2016–2022 (~7 years)
 - Wayback (old format): 2009–2015 (~7 years, harder to parse)
 - Pre-2009: also accessible, likely not worth the effort
-- Total realistic training range: 2016–present (~10 years, hundreds of meeting-drug pairs)
+- **Total realistic training range: 2020–present (around 6 years)**
 
   ### Extraction rule
 Regex pattern (conceptually):
@@ -21,7 +21,7 @@ Regex pattern (conceptually):
 - On the next line, find `Vote Result: Yes: <int> No: <int> Abstain: <int>`
 - Critical: distinguish `VOTE:` from `DISCUSSION:` — minutes contain both, only `VOTE:` lines are labels
 
-### PDF URL pattern (locked)
+### PDF URL pattern
 - All FDA-hosted PDFs use: `https://www.fda.gov/media/<NUMBER>/download`
 - On Wayback, prefix with: `https://web.archive.org/web/<TIMESTAMP>/`
 - The Minutes PDF link is found on the meeting page; we identify it by document title containing "Minutes"
