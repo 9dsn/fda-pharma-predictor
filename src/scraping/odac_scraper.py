@@ -18,6 +18,7 @@ def fetch_meeting_page(url):
     response.raise_for_status() #throw an exception if there's an error
     return response.text
 
+
 def find_minutes_pdf_url(html):
     """finds the URL of the minutes pdf in a meeting page"""
     soup = BeautifulSoup(html, "html.parser")
@@ -42,6 +43,7 @@ def find_minutes_pdf_url(html):
         return "https://www.fda.gov" + relative_url
     return relative_url
 
+
 def download_pdf(url, dest_path):
     """download a PDF from a URL and save it to disk"""
 
@@ -56,6 +58,7 @@ def download_pdf(url, dest_path):
     
     with open(dest_path, "wb") as f: #wb, write bytes
         f.write(response.content)
+
 
 def scrape_one_meeting(meeting_url, output_dir="data/raw"):
     """Scraping 1 ODAC meeting: fetch page, find Minutes PDF, download it
