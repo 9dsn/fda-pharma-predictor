@@ -2,6 +2,7 @@
 
 import requests
 from bs4 import BeautifulSoup
+from pathlib import Path
 
 def fetch_meeting_page(url):
     """Fetch the HTML of an FDA meeting page."""
@@ -52,12 +53,9 @@ def download_pdf(url, dest_path):
 
     response = requests.get(url, headers=headers, timeout=60) #increased timeout
     response.raise_for_status()
-
+    
     with open(dest_path, "wb") as f: #wb, write bytes
         f.write(response.content)
-
-from pathlib import Path
-
 
 def scrape_one_meeting(meeting_url, output_dir="data/raw"):
     """Scraping 1 ODAC meeting: fetch page, find Minutes PDF, download it
