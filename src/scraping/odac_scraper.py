@@ -40,3 +40,37 @@ def find_minutes_pdf_url(html):
     if relative_url.startswith("/"):
         return "https://www.fda.gov" + relative_url
     return relative_url
+
+def download_pdf(url, dest_path):
+    """download a PDF from a URL and save it to disk"""
+
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                      "AppleWebKit/537.36 (KHTML, like Gecko) "
+                      "Chrome/120.0.0.0 Safari/537.36"
+    }
+
+    response = requests.get(url, headers=headers, timeout=60) #increased timeout
+    response.raise_for_status()
+
+    with open(dest_path, "wb") as f: #wb, write bytes
+        f.write(response.content)
+
+from pathlib import Path
+
+
+def scrape_one_meeting(meeting_url, output_dir="data/raw"):
+    """Scraping 1 ODAC meeting: fetch page, find Minutes PDF, download it
+    then it returns the path where the PDF was saved"""
+    
+    html = fetch_meeting_page(meeting_url)
+
+    pdf_url = find_minutes_pdf_url(html)
+
+    # builds filename
+    slug = meeting_url.rstrip("/").split("/")[-1]
+    dest_path = Path(output_dir) / f"{slug}.pdf"
+
+    download_pdf(pdf_url, dest_path)
+
+    return dest_path
