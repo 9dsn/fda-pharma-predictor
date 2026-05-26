@@ -29,3 +29,8 @@ Regex pattern (conceptually):
 ### Recon complete
 Ready to begin scraper implementation.
 - Next: write src/scraping/odac_scraper.py
+
+## 2026-05-25 — Phase 2 mostly complete
+- Scraper works end-to-end on live FDA (2023-2026)
+- 13 PDFs in data/raw/, one expected failure (the one in April 2026 due to Minutes not being posted)
+- Remaining: Wayback (2020–2022) + scripts/scrape_all.py entry point
