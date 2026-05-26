@@ -3,6 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 from pathlib import Path
+import time
 
 def fetch_meeting_page(url):
     """Fetch the HTML of an FDA meeting page."""
@@ -99,3 +100,26 @@ def find_meeting_urls(year_html):
         meeting_urls.append(full_url)
 
     return meeting_urls
+
+
+def crawl_year(year_url):
+    """craw every meeting on a year listing page then downloading Minutes PDF"""
+
+    html_data = fetch_meeting_page(year_url)
+
+    meeting_urls = find_meeting_urls(html_data)
+
+    dest_paths = []
+
+    for meeting in meeting_urls:
+        try:
+            print(f"currently scraping: {meeting}")
+
+            temp_path = scrape_one_meeting(meeting)
+            dest_paths.append(temp_path)
+
+            time.sleep(1) # to give some time between loop iteration
+
+        except Exception as e:
+            print(f"failed: {meeting}: {e}")
+    return dest_paths
