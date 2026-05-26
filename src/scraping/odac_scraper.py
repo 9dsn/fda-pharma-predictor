@@ -75,3 +75,27 @@ def scrape_one_meeting(meeting_url, output_dir="data/raw"):
     download_pdf(pdf_url, dest_path)
 
     return dest_path
+
+
+def find_meeting_urls(year_html):
+    """finding all meeting page URLs on an ODAC year listing page"""
+    soup = BeautifulSoup(year_html, "html.parser")
+
+    meeting_urls = []
+    for link in soup.find_all("a"):
+        href = link.get("href")
+
+        if not href: # skip links with no href,
+            continue 
+        if "/advisory-committee-calendar/" not in href: # if href is not a meeting page
+            continue
+
+        # converting relative URLs to real/valid linkss
+        if href.startswith("/"):
+            full_url = "https://www.fda.gov" + href
+        else:
+            full_url = href
+
+        meeting_urls.append(full_url)
+
+    return meeting_urls
