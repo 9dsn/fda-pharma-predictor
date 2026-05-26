@@ -123,3 +123,22 @@ def crawl_year(year_url):
         except Exception as e:
             print(f"failed: {meeting}: {e}")
     return dest_paths
+
+
+def crawl_all_years(years):
+    """crawl every meeting across the given years and download all the Minutes PDF"""
+    all_paths = []
+
+    for year in years:
+        print(f"crawl year {year}")
+        year_url = f"https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/{year}-meeting-materials-oncologic-drugs-advisory-committee"
+
+        try:
+            current_year_paths = crawl_year(year_url)
+            all_paths.extend(current_year_paths)
+            time.sleep(1)
+
+        except Exception as e:
+            print(f"failed: {year}: {e}")
+    
+    return all_paths
