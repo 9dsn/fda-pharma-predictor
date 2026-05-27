@@ -78,7 +78,7 @@ def scrape_one_meeting(meeting_url, output_dir="data/raw"):
     return dest_path
 
 
-def find_meeting_urls(year_html):
+def find_meeting_urls(year_html, base_url="https://www.fda.gov"):
     """finding all meeting page URLs on an ODAC year listing page"""
     soup = BeautifulSoup(year_html, "html.parser")
 
@@ -93,7 +93,7 @@ def find_meeting_urls(year_html):
 
         # converting relative URLs to real/valid linkss
         if href.startswith("/"):
-            full_url = "https://www.fda.gov" + href
+            full_url = base_url + href
         else:
             full_url = href
 
