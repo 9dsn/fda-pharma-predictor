@@ -34,3 +34,5 @@ Ready to begin scraper implementation.
 - Scraper works end-to-end on live FDA (2023-2026)
 - 13 PDFs in data/raw/, one expected failure (the one in April 2026 due to Minutes not being posted)
 - Remaining: Wayback (2020–2022) + scripts/scrape_all.py entry point
+
+In testing the crawler against Wayback Machine, I found that my find_meeting_urls function was assuming all relative URLs starting with / belonged to www.fda.gov. However, Wayback rewrites links to point back into its archive, so I added a check: when fetching a Wayback-hosted page, relative URLs should be resolved against web.archive.org instead. 
