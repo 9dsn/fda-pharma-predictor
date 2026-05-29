@@ -5,6 +5,12 @@ from bs4 import BeautifulSoup
 from pathlib import Path
 import time
 
+WAYBACK_YEAR_URLS = {
+    2020: "https://web.archive.org/web/20201205131521/https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/2020-meeting-materials-oncologic-drugs-advisory-committee",
+    2021: "https://web.archive.org/web/20230723092033/https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/2021-meeting-materials-oncologic-drugs-advisory-committee",
+    2022: "https://web.archive.org/web/20230326222702/https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/2022-meeting-materials-oncologic-drugs-advisory-committee",
+}
+
 def fetch_meeting_page(url):
     """Fetch the HTML of an FDA meeting page."""
 
@@ -20,7 +26,7 @@ def fetch_meeting_page(url):
     return response.text
 
 
-def find_minutes_pdf_url(html):
+def find_minutes_pdf_url(html, base_url="https://www.fda.gov"):
     """finds the URL of the minutes pdf in a meeting page"""
     soup = BeautifulSoup(html, "html.parser")
 
@@ -41,7 +47,7 @@ def find_minutes_pdf_url(html):
 
     # the URL is relative (/media/...) so making it valid
     if relative_url.startswith("/"):
-        return "https://www.fda.gov" + relative_url
+        return base_url + relative_url
     return relative_url
 
 
@@ -61,13 +67,13 @@ def download_pdf(url, dest_path):
         f.write(response.content)
 
 
-def scrape_one_meeting(meeting_url, output_dir="data/raw"):
+def scrape_one_meeting(meeting_url, output_dir="data/raw", base_url="https://www.fda.gov"):
     """Scraping 1 ODAC meeting: fetch page, find Minutes PDF, download it
     then it returns the path where the PDF was saved"""
     
     html = fetch_meeting_page(meeting_url)
 
-    pdf_url = find_minutes_pdf_url(html)
+    pdf_url = find_minutes_pdf_url(html, base_url=base_url)
 
     # builds filename
     slug = meeting_url.rstrip("/").split("/")[-1]
@@ -102,12 +108,12 @@ def find_meeting_urls(year_html, base_url="https://www.fda.gov"):
     return meeting_urls
 
 
-def crawl_year(year_url):
+def crawl_year(year_url, base_url="https://www.fda.gov"):
     """craw every meeting on a year listing page then downloading Minutes PDF"""
 
     html_data = fetch_meeting_page(year_url)
 
-    meeting_urls = find_meeting_urls(html_data)
+    meeting_urls = find_meeting_urls(html_data, base_url=base_url)
 
     dest_paths = []
 
@@ -115,7 +121,7 @@ def crawl_year(year_url):
         try:
             print(f"currently scraping: {meeting}")
 
-            temp_path = scrape_one_meeting(meeting)
+            temp_path = scrape_one_meeting(meeting, base_url=base_url)
             dest_paths.append(temp_path)
 
             time.sleep(1) # to give some time between loop iteration
@@ -131,10 +137,16 @@ def crawl_all_years(years):
 
     for year in years:
         print(f"crawl year {year}")
-        year_url = f"https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/{year}-meeting-materials-oncologic-drugs-advisory-committee"
+
+        if year in WAYBACK_YEAR_URLS:
+            year_url = WAYBACK_YEAR_URLS[year]
+            base_url = "https://web.archive.org"
+        else:
+            year_url = f"https://www.fda.gov/advisory-committees/oncologic-drugs-advisory-committee/{year}-meeting-materials-oncologic-drugs-advisory-committee"
+            base_url = "https://www.fda.gov"
 
         try:
-            current_year_paths = crawl_year(year_url)
+            current_year_paths = crawl_year(year_url, base_url=base_url)
             all_paths.extend(current_year_paths)
             time.sleep(1)
 
