@@ -26,6 +26,10 @@
 - `find_meeting_urls` initially assumed all relative URLs were fda.gov so it broke on Wayback. Added `base_url` parameter with FDA default to fix
 - Some meetings have no Minutes PDF posted yet so i handled with try/except in crawler loop
 
+## Phase 2 known TODOs (revisit after Phase 4)
+- Add exponential backoff retry on 5xx and connection errors
+- Consider broadening beyond ODAC (PCNS, BRUDAC) if dataset feels too small
+
 ## Decisions
 - Hardcoded Wayback year URLs rather than scraping dynamically since they're static archive snapshots, can change later
 - Scope: ODAC only for now since it keeps data clean but it can be expandable later
