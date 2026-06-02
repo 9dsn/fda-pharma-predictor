@@ -79,6 +79,10 @@ def scrape_one_meeting(meeting_url, output_dir="data/raw", base_url="https://www
     slug = meeting_url.rstrip("/").split("/")[-1]
     dest_path = Path(output_dir) / f"{slug}.pdf"
 
+    if dest_path.exists():
+        print(f"skipping {slug}, already had")
+        return dest_path
+
     download_pdf(pdf_url, dest_path)
 
     return dest_path
