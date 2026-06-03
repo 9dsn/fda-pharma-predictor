@@ -5,7 +5,7 @@ import pdfplumber
 from pathlib import Path
 import pandas as pd
 
-VOTE_PATTERN = re.compile(r"(\d+)\.\s*VOTE:\s*(.+?\?)[\s\n]{0,200}?Vote Results?:\s*Yes:\s*(\d+)\s*No:\s*(\d+)\s*Abstain:\s*(\d+)",
+VOTE_PATTERN = re.compile(r"(\d+)\.\s*VOTE:\s*((?:(?!VOTE:).)+?\?).{0,200}?Vote Results?:\s*Yes:\s*(\d+)\s*No:\s*(\d+)\s*Abstain:\s*(\d+)",
     re.DOTALL,)
 
 def extract_pdf_text(pdf_path):
