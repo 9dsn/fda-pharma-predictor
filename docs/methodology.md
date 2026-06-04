@@ -30,6 +30,14 @@
 - Add exponential backoff retry on 5xx and connection errors
 - Consider broadening beyond ODAC (PCNS, BRUDAC) if dataset feels too small
 
+## Phase 3B status (briefing scraper)
+- 78 briefing PDFs across 28 meetings, ~235 MB
+- 2020, 2023-2026: complete
+- 2021: complete except 3 PDFs (Wayback 404/403 — files not archived)
+- 2022: partial — only Oct 28 + Sep 22-23 briefings; Wayback rate-limited remaining meetings (May, Apr, Feb)
+- TODO: re-run crawl_all_years_briefings([2022]) in a fresh session after Wayback cool-off
+- TODO: 4 known missing briefings due to permanent Wayback 404/403 (treat as data unavailable)
+
 ## Decisions
 - Hardcoded Wayback year URLs rather than scraping dynamically since they're static archive snapshots, can change later
 - Scope: ODAC only for now since it keeps data clean but it can be expandable later
