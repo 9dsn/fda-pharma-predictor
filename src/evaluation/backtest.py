@@ -125,15 +125,18 @@ def run_backtest(mode):
 def compute_metrics(trades):
     if len(trades) == 0:
         return {"error": "no trades"}
-    r  = trades["trade_return"].values
-    eq = np.cumprod(1 + r)
+    r = trades["trade_return"].values
+    
+    eq = 1.0 + np.cumsum(r)
+    
     dates = pd.to_datetime(trades["event_date"])
     years = max((dates.max() - dates.min()).days / 365.25, 0.5)
     sharpe = (r.mean() / r.std() * np.sqrt(len(r) / years)) if r.std() > 0 else 0.0
-    peak   = np.maximum.accumulate(eq)
+    peak = np.maximum.accumulate(eq)
+    
     return {
         "n_trades":          int(len(r)),
-        "total_return_pct":  round((eq[-1] - 1) * 100, 2),
+        "total_return_pct":  round((eq[-1] - 1) * 100, 2),  # This simplifies directly to round(r.sum() * 100, 2)
         "sharpe_annualized": round(sharpe, 3),
         "max_drawdown_pct":  round(float(((eq - peak) / peak).min()) * 100, 2),
         "hit_rate_pct":      round(float((r > 0).mean()) * 100, 1),
@@ -141,10 +144,11 @@ def compute_metrics(trades):
     }
 
 
+
 def plot_equity(trades, mode):
     if len(trades) == 0:
         return
-    eq     = np.cumprod(1 + trades["trade_return"].values)
+    eq = 1.0 + np.cumsum(trades["trade_return"].values)
     labels = [f"{row.ticker}\n{row.event_date}" for _, row in trades.iterrows()]
     plt.figure(figsize=(8, 4))
     plt.plot(range(1, len(eq) + 1), eq, marker="o", linewidth=2)
