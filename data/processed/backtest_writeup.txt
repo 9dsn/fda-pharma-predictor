@@ -1,0 +1,17 @@
+
+RESULTS
+===============
+
+Small-cap only (5 trades):
+  Total return:  346.21%
+  Sharpe ratio:  1.312
+  Hit rate:      80.0%
+  Max drawdown:  -1.7%
+
+All tradeable (13 trades):
+  Total return:  346.07%
+  Sharpe ratio:  0.924
+  Hit rate:      46.2%
+  Max drawdown:  -3.63%
+
+n=5

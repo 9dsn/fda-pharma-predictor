@@ -188,22 +188,34 @@ def compute_shap(model, X_scaled: np.ndarray, feature_names: list, model_name: s
     shap.summary_plot(shap_values, features=X_scaled, feature_names=feature_names)
 
 
-# ---------------------------------------------------------------------------
-# Orchestrator / Entry Point
-# ---------------------------------------------------------------------------
+def save_loocv_probabilities(results: dict, path: str = "data/processed/loocv_probabilities.csv"):
+    """save out of foldLOOCV predictions to CSV"""
+    df = pd.DataFrame({
+        "y_true": results["y_true"],
+        "y_pred": results["y_pred"],
+        "prob_yes": results["y_pred_proba"],
+    })
+    df.to_csv(path, index=False)
+    print(f"\nSaved LOOCV probabilities: {path}")
+    return df
+
+
 def main():
-    # Step 1 — Load
+    # Step 1: Load
     X, y = load_data(DATA_PATH)
 
-    # Step 2 & 3 — LOOCV + Evaluate
+    # Step 2 & 3: LOOCV + Evaluate
     for model_name in ["logistic_regression", "random_forest"]:
         results = run_loocv(X, y, model_name)
         evaluate_results(results)
 
-    # Step 4 & 5 — Full-dataset fit + SHAP
+    # Step 4 & 5: Full dataset fit + SHAP
     for model_name in ["logistic_regression", "random_forest"]:
         model, X_scaled, feature_names = fit_final_model(X, y, model_name)
         compute_shap(model, X_scaled, feature_names, model_name)
+    # rf because no dependency on briefing_char_count
+    results_rf = run_loocv(X, y, "random_forest")
+    save_loocv_probabilities(results_rf)
 
 
 if __name__ == "__main__":
