@@ -1,17 +1,8 @@
-"""
-ML Model Training, LOOCV Evaluation, and SHAP Explainability
+"""ML Model Training, LOOCV Evaluation, and SHAP Explainability
 
 This module trains two classifiers on FDA AdCom briefing text features,
 evaluates them with Leave-One-Out Cross-Validation (LOOCV), and computes
-SHAP values on a final full-dataset fit for model explainability.
-
-Models compared:
-  1. L2-Regularized Logistic Regression  (requires StandardScaler)
-  2. Random Forest Classifier            (does NOT require scaling)
-
-Pipeline overview:
-  load_data() --> run_loocv() --> evaluate_results() --> fit_final_model() --> compute_shap()
-"""
+SHAP values on a final full-dataset fit for model explainability"""
 
 import numpy as np
 import pandas as pd
