@@ -8,8 +8,8 @@ Right now the minutes scraper and vote extractor are both working. The repo can 
 historical Minutes PDFs, extract structured ODAC vote records, and join those vote rows
 with briefing document text when the briefing PDFs are available.
 
-The next real phase is feature engineering from the briefing docs, then training a model
-to predict committee vote outcomes before a meeting happens.
+The next real phase is training a first model on the feature matrix, then checking whether
+that signal lines up with approvals and biotech stock moves.
 
 ---
 
@@ -21,7 +21,7 @@ to predict committee vote outcomes before a meeting happens.
 | 2 | ODAC minutes scraper (2020–present) | **Done** |
 | 3 | Vote extraction + structured dataset | **Done for current data** |
 | 3B | Briefing PDF scraper + text join | Mostly done |
-| 4 | NLP features from briefing docs | Upcoming |
+| 4 | NLP features from briefing docs | **Done for current data** |
 | 5 | Model training + evaluation | Upcoming |
 | 6 | Stock/approval correlation analysis | Upcoming |
 
@@ -60,7 +60,7 @@ FDA.gov / Wayback Machine
   (votes + briefing text → joined dataset)
         │
         ▼
-  Phase 4: Feature Engineering
+  Phase 4: Feature Engineering       ← you are here
   (briefing docs → NLP features)
         │
         ▼
@@ -156,6 +156,24 @@ briefing_150252.pdf: Unexpected EOF
 So the pipeline works, but briefing coverage is still a little imperfect because the FDA /
 Wayback source data is imperfect.
 
+Build the Phase 4 feature matrix:
+
+```bash
+python scripts/build_features.py
+```
+
+This writes:
+
+```text
+data/processed/feature_matrix.csv
+```
+
+The current feature matrix has 25 usable rows and 16 columns. It keeps metadata/target
+columns (`source`, `meeting_date`, `question_text`, `outcome`) and adds simple NLP /
+clinical-signal features from the briefing text, including TF-IDF positive/negative scores,
+sentiment ratios, concern density, survival/PFS flags, accelerated approval flags, and
+p-value strength.
+
 ---
 
 ## Repo Structure
@@ -171,7 +189,8 @@ fda-pharma-predictor/
 ├── scripts/
 │   ├── scrape_all.py      # CLI entry point for the minutes scraper
 │   ├── extract_votes.py   # extract structured votes from Minutes PDFs
-│   └── build_dataset.py   # join votes with briefing text
+│   ├── build_dataset.py   # join votes with briefing text
+│   └── build_features.py  # build the Phase 4 feature matrix
 ├── data/
 │   ├── raw/            # downloaded Minutes + briefing PDFs (gitignored)
 │   ├── interim/        # extracted vote records (gitignored)
@@ -201,7 +220,7 @@ Design decisions, data sources, known bugs fixed, and TODOs are documented in
   the briefing PDFs are available
 - [ ] Add a validation/report script for missing briefings, bad PDFs, duplicate candidates,
   and vote-count anomalies
-- [ ] **Phase 4** — extract NLP features from briefing docs (sentiment, statistical claim
+- [x] **Phase 4** — extract NLP features from briefing docs (sentiment, statistical claim
   density, label language, trial design signals)
 - [ ] **Phase 5** — train a classifier; time-based train/test split to avoid leakage;
   calibration analysis

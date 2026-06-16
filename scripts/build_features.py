@@ -10,7 +10,7 @@ def main():
     args = parser.parse_args()
     df = build_feature_matrix(args.dataset, args.output)
     print(df[["outcome", "tfidf_positive_score", "safety_concern_flag",
-              "survival_benefit_mentioned"]].to_string())
+              "survival_positive"]].to_string())
 
 if __name__ == "__main__":
     main()

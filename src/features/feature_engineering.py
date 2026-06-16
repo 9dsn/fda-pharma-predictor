@@ -1,6 +1,6 @@
 """this performs FE on the vote briefing dataset. extracts relevant features from the raw data, (e.g., word counts, sentiment scores) and metadata (e.g., vote outcome, date)
 Input:  data/processed/vote_briefing_dataset.csv
-Output: data/processed/feature_matrix.csv  (25 usable rows × 19 cols: 15 features + 4 metadata/target)
+Output: data/processed/feature_matrix.csv  (25 usable rows x 16 cols: 12 features + 4 metadata/target)
 """
 
 import re
@@ -79,7 +79,8 @@ def concern_density(text):
     """"measures concerned tone of the document per 1,000 words"""
     pattern = r"\b(concern|risk|uncertainty|adverse|toxicity|safety)\b" # inclues boundaries, EX: not to confuse with 'briskly
     matches = re.findall(pattern, text.lower())
-    return (len(matches) / max(len(text), 1)) * 1000 # prevent div by zero
+    word_count = len(re.findall(r"\b\w+\b", text))
+    return (len(matches) / max(word_count, 1)) * 1000 # prevent div by zero
 
 
 def binary_flags(text):
@@ -87,16 +88,25 @@ def binary_flags(text):
     t = text.lower()
 
     # capture p values and check if any (<0.05)
-    p_vals = re.findall(r'p\s*[=<]\s*[\d.]+', t)
+    p_vals = re.findall(r'p\s*[=<]\s*([0-9.]+)', t)
     p_strong = any (
-        float(v) < 0.05 for v in p_vals
+        float(v) < 0.05 
+        for v in p_vals
         if _is_float(v) and float(v) > 0
     )
 
     # overall survival
     os_mentioned = bool(
-        re.search(r'\b(overall survival|os benefit|os improvement)\b', t)
-    )
+    re.search(r'\b(overall survival|os)\b', t))
+
+    survival_positive = int(bool(
+        re.search(
+            r'(improved overall survival|overall survival benefit|'
+            r'statistically significant overall survival|'
+            r'os benefit|os improvement)',
+            t
+        )
+    ))
 
     # progression free survival
     pfs_mentioned = bool(
@@ -104,16 +114,13 @@ def binary_flags(text):
     )
     return {
         # clincial drug quality
-        "survival_benefit_mentioned": int(os_mentioned),
+        "survival_positive": survival_positive,
         "pfs_only": int(pfs_mentioned and not os_mentioned),
         # specific concerns and regulatory flags
-        "response_rate_mentioned": int(bool(re.search(r'\b(?:response rate|orr)\b', t))),
-        "safety_concern_flag": int(bool(re.search(r'\b(serious adverse|black box|sae)\b', t))),
+        "safety_concern_flag": int(bool(re.search(r'(serious adverse|black box|sae|'
+                                                  r'safety concern|toxicit|treatment-related death)', t))),
         "accelerated_approval_flag": int(bool(re.search(r'\b(accelerated approval|breakthrough)\b', t))),
         "p_value_strong": int(p_strong),
-        "subgroup_only_benefit": int(bool(re.search(r'\b(subgroup|subset)\b', t))),
-        "fda_staff_favorable": int(bool(re.search(r'\b(staff recommend|agency recommend)\b', t))),
-        "randomized_controlled": int(bool(re.search(r'\b(randomized|placebo)\b', t))),
     }
 
 
@@ -121,7 +128,7 @@ def _is_float(s):
     try:
         float(s)
         return True
-    except:
+    except ValueError:
         return False
     
 
@@ -163,6 +170,7 @@ def build_feature_matrix(
             #numeric features
             "tfidf_positive_score": pos_scores[r],
             "tfidf_negative_score": neg_scores[r],
+            "tfidf_balance": pos_scores[r] - neg_scores[r],
             "sentiment_positive_ratio": pos_r,
             "sentiment_negative_ratio": neg_r,
             "concern_density": concern_density(text),
@@ -181,7 +189,6 @@ def build_feature_matrix(
     Path(output_path).parent.mkdir(parents=True, exist_ok=True)
     feature_df.to_csv(output_path, index=False)
 
-    print(f" Feature matrix saved to {output_path}")
-    print(f" FInal matrix shape: {feature_df.shape}")
+    print(f"Feature matrix saved to {output_path}")
+    print(f"Final matrix shape: {feature_df.shape}")
     return feature_df
-
