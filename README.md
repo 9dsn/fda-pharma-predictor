@@ -1,234 +1,125 @@
-# FDA ODAC Advisory Committee Vote Predictor
+# FDA ODAC Vote Predictor
 
-A pipeline to predict FDA Oncologic Drugs Advisory Committee (ODAC) vote outcomes from
-publicly available briefing documents, and validate those predictions as a leading
-indicator for drug approval decisions and biotech stock moves.
+Predicting FDA Oncologic Drugs Advisory Committee vote outcomes from public briefing
+documents, then checking whether the signal lines up with biotech stock moves.
 
-Right now the minutes scraper and vote extractor are both working. The repo can pull
-historical Minutes PDFs, extract structured ODAC vote records, and join those vote rows
-with briefing document text when the briefing PDFs are available.
+This started as a messy public-data problem: ODAC meeting minutes and briefing docs are
+mostly PDFs spread across FDA.gov and Wayback Machine. The project turns that into a
+small modeling pipeline: scrape PDFs, extract vote records, join briefing text, engineer
+clinical/NLP features, train classifiers, and run an event-driven backtest.
 
-The next real phase is training a first model on the feature matrix, then checking whether
-that signal lines up with approvals and biotech stock moves.
+## Current Results
 
----
+- 28 extracted ODAC vote rows from 2020-2026
+- 25 rows with usable briefing text
+- 16-column feature matrix with sentiment, concern density, survival/PFS, accelerated
+  approval, p-value, and TF-IDF features
+- LOOCV model evaluation with logistic regression and random forest
+- SHAP feature-importance pass plus a `briefing_char_count` ablation check
+- Backtest using out-of-fold random forest probabilities and ticker mappings
 
-## Status
+Backtest headline:
 
-| Phase | Description | Status |
-|---|---|---|
-| 1 | Repo setup, data planning | Done |
-| 2 | ODAC minutes scraper (2020–present) | **Done** |
-| 3 | Vote extraction + structured dataset | **Done for current data** |
-| 3B | Briefing PDF scraper + text join | Mostly done |
-| 4 | NLP features from briefing docs | **Done for current data** |
-| 5 | Model training + evaluation | Upcoming |
-| 6 | Stock/approval correlation analysis | Upcoming |
+| Universe | Trades | Total Return | Sharpe | Hit Rate | Max Drawdown |
+|---|---:|---:|---:|---:|---:|
+| Small-cap only | 5 | 190.82% | 1.312 | 80.0% | -1.08% |
+| All tradeable | 13 | 190.98% | 0.924 | 46.2% | -2.12% |
 
----
-
-## Motivation
-
-FDA Advisory Committee meetings are one of the few moments where a drug's fate is debated
-publicly — expert panelists vote yes/no on approval questions and those votes are a strong
-signal for what the FDA ultimately decides. For biotech stocks, an AdCom vote can move a
-company's price by 30–60% in a single day.
-
-Most of this information is buried in PDFs on FDA.gov. The goal here is to surface it
-systematically: scrape the historical record, extract structured vote data, and eventually
-build a model that can predict a committee's likely outcome from the briefing documents
-released ahead of the meeting. If that signal is predictive, it's a useful leading
-indicator for both approval timelines and market reactions.
-
----
+Important: this is a tiny dataset, so the backtest is more of a proof-of-signal than a
+tradable strategy. The results are interesting, not conclusive.
 
 ## Pipeline
 
 ```text
 FDA.gov / Wayback Machine
-        │
-        ▼
-  Phase 2: Scraper
-  (Minutes PDFs → data/raw/)
-        │
-        ▼
-  Phase 3: Vote Extractor
-  (Minutes PDFs → structured vote records)
-        │
-        ▼
-  Phase 3B: Briefing Join          ← you are here
-  (votes + briefing text → joined dataset)
-        │
-        ▼
-  Phase 4: Feature Engineering       ← you are here
-  (briefing docs → NLP features)
-        │
-        ▼
-  Phase 5: Model
-  (features → vote prediction)
-        │
-        ▼
-  Phase 6: Validation
-  (predictions vs. approvals/stock moves)
+        -> minutes + briefing PDFs
+        -> structured vote extraction
+        -> vote + briefing-text dataset
+        -> clinical/NLP feature matrix
+        -> LOOCV classifiers + SHAP
+        -> event-driven stock backtest
 ```
-
----
-
-## Setup
-
-```bash
-git clone https://github.com/9dsn/fda-pharma-predictor
-cd fda-pharma-predictor
-
-python -m venv .venv
-source .venv/bin/activate      # Windows: .venv\Scripts\activate
-
-pip install -e .
-
-cp .env.example .env           # fill in any keys if needed
-```
-
-Requires Python 3.10+.
-
----
 
 ## Usage
 
-Run the minutes scraper for all years (2020–2026 by default):
+```bash
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
+```
+
+Scrape ODAC minutes:
 
 ```bash
 python scripts/scrape_all.py
 ```
 
-Scrape specific years only:
-
-```bash
-python scripts/scrape_all.py --years 2022 2023 2024
-```
-
-PDFs are saved to `data/raw/` (gitignored). Already-downloaded files are skipped
-automatically, so re-running is safe.
-
-The scraper uses live FDA.gov for 2023–present and the Wayback Machine for 2020–2022,
-where older meeting pages have been archived off the live site.
-
-Extract structured vote records from the Minutes PDFs:
+Extract vote records:
 
 ```bash
 python scripts/extract_votes.py
 ```
 
-This writes:
-
-```text
-data/processed/votes.csv
-```
-
-The vote rows include:
-
-```text
-question_number, question_text, yes, no, abstain,
-total_votes, outcome, vote_count_sane, source, meeting_date
-```
-
-Build the joined vote + briefing-text dataset:
+Build the joined vote + briefing dataset:
 
 ```bash
 python scripts/build_dataset.py
 ```
 
-This writes:
-
-```text
-data/processed/vote_briefing_dataset.csv
-```
-
-Right now the extracted dataset has 28 vote rows across 19 meeting sources. All extracted
-vote counts are in the expected ODAC panel-size range. There are 3 vote rows missing
-briefing text because the matching briefing PDFs are unavailable or not extractable yet.
-
-One briefing PDF is corrupted/truncated and gets skipped during text extraction:
-
-```text
-briefing_150252.pdf: Unexpected EOF
-```
-
-So the pipeline works, but briefing coverage is still a little imperfect because the FDA /
-Wayback source data is imperfect.
-
-Build the Phase 4 feature matrix:
+Build model features:
 
 ```bash
 python scripts/build_features.py
 ```
 
-This writes:
+Train/evaluate models and save LOOCV probabilities:
 
-```text
-data/processed/feature_matrix.csv
+```bash
+python -m src.models.train_evaluate
 ```
 
-The current feature matrix has 25 usable rows and 16 columns. It keeps metadata/target
-columns (`source`, `meeting_date`, `question_text`, `outcome`) and adds simple NLP /
-clinical-signal features from the briefing text, including TF-IDF positive/negative scores,
-sentiment ratios, concern density, survival/PFS flags, accelerated approval flags, and
-p-value strength.
+Run the backtest:
 
----
+```bash
+python -m src.evaluation.backtest
+```
+
+## Key Outputs
+
+```text
+data/processed/votes.csv
+data/processed/vote_briefing_dataset.csv
+data/processed/feature_matrix.csv
+data/processed/loocv_probabilities.csv
+data/processed/ticker_map.csv
+data/processed/backtest_trades_smallcap.csv
+data/processed/backtest_trades_all.csv
+data/processed/backtest_summary.json
+data/processed/plots/equity_smallcap.png
+data/processed/plots/equity_all.png
+```
 
 ## Repo Structure
 
 ```text
-fda-pharma-predictor/
-├── src/
-│   ├── scraping/       # Phase 2: ODAC minutes scraper
-│   ├── parsing/        # Phase 3: vote extraction
-│   ├── features/       # Phase 3B dataset join + Phase 4 features
-│   ├── models/         # Phase 5: classifier (upcoming)
-│   └── evaluation/     # Phase 6: validation (upcoming)
-├── scripts/
-│   ├── scrape_all.py      # CLI entry point for the minutes scraper
-│   ├── extract_votes.py   # extract structured votes from Minutes PDFs
-│   ├── build_dataset.py   # join votes with briefing text
-│   └── build_features.py  # build the Phase 4 feature matrix
-├── data/
-│   ├── raw/            # downloaded Minutes + briefing PDFs (gitignored)
-│   ├── interim/        # extracted vote records (gitignored)
-│   └── processed/      # model-ready features (gitignored)
-├── docs/
-│   └── methodology.md  # decisions, data sources, known issues
-├── notebooks/          # exploration notebooks
-├── tests/
-└── pyproject.toml
+src/scraping/      FDA and Wayback scraping
+src/parsing/       PDF text and vote extraction
+src/features/      dataset join + feature engineering
+src/models/        LOOCV training, SHAP, ablation
+src/evaluation/    stock-event backtest
+scripts/           CLI entry points
+docs/              methodology notes
+data/processed/    generated datasets and backtest outputs
 ```
 
----
+## Limitations
 
-## Methodology
-
-Design decisions, data sources, known bugs fixed, and TODOs are documented in
-[docs/methodology.md](docs/methodology.md).
-
----
-
-## Roadmap
-
-- [x] **Phase 3** — parse vote records from Minutes PDFs using pdfplumber; build a
-  structured dataset with meeting date, question text, vote counts, outcome, sanity flags,
-  and dedupe
-- [x] **Phase 3B** — scrape briefing documents and join briefing text onto vote rows where
-  the briefing PDFs are available
-- [ ] Add a validation/report script for missing briefings, bad PDFs, duplicate candidates,
-  and vote-count anomalies
-- [x] **Phase 4** — extract NLP features from briefing docs (sentiment, statistical claim
-  density, label language, trial design signals)
-- [ ] **Phase 5** — train a classifier; time-based train/test split to avoid leakage;
-  calibration analysis
-- [ ] **Phase 6** — correlate predictions against actual FDA approval decisions and stock
-  price moves around AdCom dates
-- [ ] Expand beyond ODAC to PCNS, BRUDAC if dataset is too small
-
----
+- ODAC only, so sample size is small.
+- Some old FDA/Wayback briefing PDFs are missing, blocked, or corrupted.
+- Ticker mapping is manual and should be audited before any serious use.
+- The backtest uses a simple event window and XBI adjustment; it does not model slippage,
+  borrow costs, liquidity, or position sizing.
+- This is research code, not financial advice or a production trading system.
 
 ## License
 
