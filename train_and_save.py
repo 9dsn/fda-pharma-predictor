@@ -14,6 +14,8 @@ import pandas as pd
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import LeaveOneOut
 
+from src.features.feature_engineering import extract_features
+
 
 DATA_PATH = Path("data/processed/feature_matrix.csv")
 OUTPUT_DIR = Path("saved_model")

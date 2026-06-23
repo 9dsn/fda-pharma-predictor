@@ -25,6 +25,31 @@ NEGATIVE_VOCAB = [
 ]
 
 
+def count_vocab_hits(text: str, vocabulary: list[str]) -> int:
+    """Count keyword and phrase hits for single-document inference.
+
+    The deployment API receives one uploaded PDF at a time, so this helper
+    supports the same keyword-count TF-IDF proxy used by the serving layer.
+    """
+    lower_text = text.lower()
+    return sum(
+        len(re.findall(rf"\b{re.escape(term)}\b", lower_text))
+        for term in vocabulary
+    )
+
+
+def build_tfidf_proxy_scores(text: str) -> tuple[float, float]:
+    """Approximate corpus TF-IDF fields for a single uploaded document.
+
+    Real IDF weights require a corpus fit, so deployment uses normalized
+    vocabulary counts while preserving the original feature names and meaning.
+    """
+    word_count = max(len(re.findall(r"\b\w+\b", text)), 1)
+    positive_score = count_vocab_hits(text, POSITIVE_VOCAB) / word_count * 1000
+    negative_score = count_vocab_hits(text, NEGATIVE_VOCAB) / word_count * 1000
+    return positive_score, negative_score
+
+
 def build_tfidf_scores(texts: list[str]):
     """"fit a TF IDF vectorizer on all the briefing texts
     then it returns (positive scores, negative scores) one float per document"""
@@ -116,6 +141,7 @@ def binary_flags(text):
         # clincial drug quality
         "survival_positive": survival_positive,
         "pfs_only": int(pfs_mentioned and not os_mentioned),
+        "response_rate_mentioned": int(bool(re.search(r"\b(response rate|orr|objective response)\b", t))),
         # specific concerns and regulatory flags
         "safety_concern_flag": int(bool(re.search(r'(serious adverse|black box|sae|'
                                                   r'safety concern|toxicit|treatment-related death)', t))),
@@ -130,6 +156,29 @@ def _is_float(s):
         return True
     except ValueError:
         return False
+
+
+def extract_features(text: str, feature_names: list[str]) -> pd.DataFrame:
+    """Create one deployment feature row aligned to the saved model order.
+
+    This is the single public serving feature function used by API inference.
+    It centralizes the single-document TF-IDF proxy, sentence sentiment ratios,
+    concern density, and binary clinical/regulatory flags to prevent
+    training-serving feature drift.
+    """
+    positive_score, negative_score = build_tfidf_proxy_scores(text)
+    positive_ratio, negative_ratio = sentiment_ratios(text)
+    feature_values = {
+        "tfidf_positive_score": positive_score,
+        "tfidf_negative_score": negative_score,
+        "tfidf_balance": positive_score - negative_score,
+        "sentiment_positive_ratio": positive_ratio,
+        "sentiment_negative_ratio": negative_ratio,
+        "concern_density": concern_density(text),
+        **binary_flags(text),
+    }
+    values = pd.Series(feature_values, dtype="float64")
+    return values.reindex(feature_names, fill_value=0.0).to_frame().T
     
 
 # MAIN BUILD FUNCTION
