@@ -9,7 +9,12 @@ app_file: app.py
 pinned: false
 ---
 
-# FDA AdCom Vote Predictor
+# ODAC Signal — FDA AdCom Vote Predictor
+
+> Predicts FDA Oncologic Drugs Advisory Committee vote outcomes from briefing PDFs using NLP + Random Forest. Returns P(YES), BUY/HOLD/SELL signal, and SHAP explanations.
+
+**[Live App]([https://your-app.onrender.com](https://your-app.onrender.com))** · **[Streamlit Demo](https://huggingface.co/spaces/ds-n-sd/odac-signal)**
+
 
 This Streamlit app predicts FDA Oncologic Drugs Advisory Committee vote outcomes from public briefing PDFs. It extracts clinical and NLP features, runs a saved Random Forest model, explains each prediction with SHAP, and summarizes the historical financial backtest used to sanity-check the signal.
 
@@ -35,13 +40,6 @@ Important caveat: the small-cap result is based on only n=5 trades, so it is ind
 ## Tech Stack
 
 Streamlit, pandas, NumPy, scikit-learn, SHAP, pdfplumber, matplotlib, and joblib.
-
-
-# ODAC Signal — FDA AdCom Vote Predictor
-
-> Predicts FDA Oncologic Drugs Advisory Committee vote outcomes from briefing PDFs using NLP + Random Forest. Returns P(YES), BUY/HOLD/SELL signal, and SHAP explanations.
-
-**[Live App]([https://your-app.onrender.com)](https://odac-signal.onrender.com/)** · **[Streamlit Demo](https://huggingface.co/spaces/ds-n-sd/odac-signal)**
 
 ## Deployment Files
 ## What it does
