@@ -13,8 +13,7 @@ pinned: false
 
 > Predicts FDA Oncologic Drugs Advisory Committee vote outcomes from briefing PDFs using NLP + Random Forest. Returns P(YES), BUY/HOLD/SELL signal, and SHAP explanations.
 
-**[Live App]([https://your-app.onrender.com](https://your-app.onrender.com))** · **[Streamlit Demo](https://huggingface.co/spaces/ds-n-sd/odac-signal)**
-
+**[Live App](https://your-app.onrender.com)** · **[Streamlit Demo](https://huggingface.co/spaces/ds-n-sd/odac-signal)**
 
 This Streamlit app predicts FDA Oncologic Drugs Advisory Committee vote outcomes from public briefing PDFs. It extracts clinical and NLP features, runs a saved Random Forest model, explains each prediction with SHAP, and summarizes the historical financial backtest used to sanity-check the signal.
 
