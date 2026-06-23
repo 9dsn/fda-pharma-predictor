@@ -36,8 +36,16 @@ Important caveat: the small-cap result is based on only n=5 trades, so it is ind
 
 Streamlit, pandas, NumPy, scikit-learn, SHAP, pdfplumber, matplotlib, and joblib.
 
-## Deployment Files
 
+# ODAC Signal — FDA AdCom Vote Predictor
+
+> Predicts FDA Oncologic Drugs Advisory Committee vote outcomes from briefing PDFs using NLP + Random Forest. Returns P(YES), BUY/HOLD/SELL signal, and SHAP explanations.
+
+**[Live App]([https://your-app.onrender.com)](https://odac-signal.onrender.com/)** · **[Streamlit Demo](https://huggingface.co/spaces/ds-n-sd/odac-signal)**
+
+## Deployment Files
+## What it does
+...
 - `app.py` loads `saved_model/model.pkl` and `saved_model/feature_names.pkl`
 - `train_and_save.py` creates the saved model artifacts from `data/processed/feature_matrix.csv`
 - `saved_model/historical.csv` powers the historical results tab
