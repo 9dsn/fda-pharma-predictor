@@ -1,0 +1,31 @@
+name: Deploy to Hugging Face Spaces
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          lfs: true
+
+      - name: Deploy to Hugging Face
+        run: |
+          pip install huggingface_hub
+          python3 -c "
+from huggingface_hub import HfApi
+api = HfApi()
+api.upload_folder(
+    folder_path='.',
+    repo_id='ds-n-sd/odac-signal',
+    repo_type='space',
+    ignore_patterns=['.git*', '.github*']
+)
+"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
