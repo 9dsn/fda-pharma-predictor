@@ -1,126 +1,44 @@
-# FDA ODAC Vote Predictor
+---
+title: FDA AdCom Vote Predictor
+emoji: 💊
+colorFrom: blue
+colorTo: green
+sdk: streamlit
+sdk_version: 1.32.0
+app_file: app.py
+pinned: false
+---
 
-Predicting FDA Oncologic Drugs Advisory Committee vote outcomes from public briefing
-documents, then checking whether the signal lines up with biotech stock moves.
+# FDA AdCom Vote Predictor
 
-This started as a messy public-data problem: ODAC meeting minutes and briefing docs are
-mostly PDFs spread across FDA.gov and Wayback Machine. The project turns that into a
-small modeling pipeline: scrape PDFs, extract vote records, join briefing text, engineer
-clinical/NLP features, train classifiers, and run an event-driven backtest.
+This Streamlit app predicts FDA Oncologic Drugs Advisory Committee vote outcomes from public briefing PDFs. It extracts clinical and NLP features, runs a saved Random Forest model, explains each prediction with SHAP, and summarizes the historical financial backtest used to sanity-check the signal.
 
-## Current Results
+## Methodology
 
-- 28 extracted ODAC vote rows from 2020-2026
-- 25 rows with usable briefing text
-- 16-column feature matrix with sentiment, concern density, survival/PFS, accelerated
-  approval, p-value, and TF-IDF features
-- LOOCV model evaluation with logistic regression and random forest
-- SHAP feature-importance pass plus a `briefing_char_count` ablation check
-- Backtest using out-of-fold random forest probabilities and ticker mappings
+| Step | Method |
+|---|---|
+| Validation | Leave-One-Out Cross-Validation on 25 historical meetings |
+| Model | Random Forest classifier with 100 estimators |
+| Explainability | SHAP TreeExplainer waterfall plots |
+| Financial test | Walk-forward event-driven backtest |
+| Benchmark | XBI-adjusted stock reaction around ODAC events |
 
-Backtest headline:
+## Backtest Results
 
-| Universe | Trades | Total Return | Sharpe | Hit Rate | Max Drawdown |
+| Universe | Trades | Sharpe | Hit Rate | Total Return | Max Drawdown |
 |---|---:|---:|---:|---:|---:|
-| Small-cap only | 5 | 190.82% | 1.312 | 80.0% | -1.08% |
-| All tradeable | 13 | 190.98% | 0.924 | 46.2% | -2.12% |
+| Small-cap only | 5 | 1.31 | 80.0% | 190.8% | -1.1% |
+| All tradeable | 13 | 0.92 | 46.2% | 191.0% | -2.1% |
 
-Important: this is a tiny dataset, so the backtest is more of a proof-of-signal than a
-tradable strategy. The results are interesting, not conclusive.
+Important caveat: the small-cap result is based on only n=5 trades, so it is indicative rather than statistically significant. This is research tooling, not investment advice.
 
-## Pipeline
+## Tech Stack
 
-```text
-FDA.gov / Wayback Machine
-        -> minutes + briefing PDFs
-        -> structured vote extraction
-        -> vote + briefing-text dataset
-        -> clinical/NLP feature matrix
-        -> LOOCV classifiers + SHAP
-        -> event-driven stock backtest
-```
+Streamlit, pandas, NumPy, scikit-learn, SHAP, pdfplumber, matplotlib, and joblib.
 
-## Usage
+## Deployment Files
 
-```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-Scrape ODAC minutes:
-
-```bash
-python scripts/scrape_all.py
-```
-
-Extract vote records:
-
-```bash
-python scripts/extract_votes.py
-```
-
-Build the joined vote + briefing dataset:
-
-```bash
-python scripts/build_dataset.py
-```
-
-Build model features:
-
-```bash
-python scripts/build_features.py
-```
-
-Train/evaluate models and save LOOCV probabilities:
-
-```bash
-python -m src.models.train_evaluate
-```
-
-Run the backtest:
-
-```bash
-python -m src.evaluation.backtest
-```
-
-## Key Outputs
-
-```text
-data/processed/votes.csv
-data/processed/vote_briefing_dataset.csv
-data/processed/feature_matrix.csv
-data/processed/loocv_probabilities.csv
-data/processed/ticker_map.csv
-data/processed/backtest_trades_smallcap.csv
-data/processed/backtest_trades_all.csv
-data/processed/backtest_summary.json
-data/processed/plots/equity_smallcap.png
-data/processed/plots/equity_all.png
-```
-
-## Repo Structure
-
-```text
-src/scraping/      FDA and Wayback scraping
-src/parsing/       PDF text and vote extraction
-src/features/      dataset join + feature engineering
-src/models/        LOOCV training, SHAP, ablation
-src/evaluation/    stock-event backtest
-scripts/           CLI entry points
-docs/              methodology notes
-data/processed/    generated datasets and backtest outputs
-```
-
-## Limitations
-
-- ODAC only, so sample size is small.
-- Some old FDA/Wayback briefing PDFs are missing, blocked, or corrupted.
-- Ticker mapping is manual and should be audited before any serious use.
-- The backtest uses a simple event window and XBI adjustment; it does not model slippage,
-  borrow costs, liquidity, or position sizing.
-- This is research code, not financial advice or a production trading system.
-
-## License
-
-MIT
+- `app.py` loads `saved_model/model.pkl` and `saved_model/feature_names.pkl`
+- `train_and_save.py` creates the saved model artifacts from `data/processed/feature_matrix.csv`
+- `saved_model/historical.csv` powers the historical results tab
+- `requirements.txt` lists the Hugging Face Space runtime dependencies
